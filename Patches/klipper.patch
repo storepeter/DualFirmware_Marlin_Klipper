@@ -1,0 +1,176 @@
+diff --git a/Makefile b/Makefile
+index 10615726..46e1065b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -33,10 +33,12 @@ CFLAGS := -I$(OUT) -Isrc -I$(OUT)board-generic/ -std=gnu11 -O2 -MD \
+     -Wall -Wold-style-definition $(call cc-option,$(CC),-Wtype-limits,) \
+     -ffunction-sections -fdata-sections -fno-delete-null-pointer-checks
+ CFLAGS += -flto -fwhole-program -fno-use-linker-plugin -ggdb3
++CFLAGS += $(EXTRA_CFLAGS)
+ 
+ OBJS_klipper.elf = $(patsubst %.c, $(OUT)src/%.o,$(src-y))
+ OBJS_klipper.elf += $(OUT)compile_time_request.o
+ CFLAGS_klipper.elf = $(CFLAGS) -Wl,--gc-sections
++LDFLAGS_klipper.elf += $(EXTRA_LDFLAGS)
+ 
+ CPPFLAGS = -I$(OUT) -P -MD -MT $@
+ 
+@@ -69,7 +71,7 @@ $(OUT)%.ld: %.lds.S $(OUT)autoconf.h
+ 
+ $(OUT)klipper.elf: $(OBJS_klipper.elf)
+ 	@echo "  Linking $@"
+-	$(Q)$(CC) $(OBJS_klipper.elf) $(CFLAGS_klipper.elf) -o $@
++	$(Q)$(CC) $(LDFLAGS_klipper.elf) $(OBJS_klipper.elf) $(CFLAGS_klipper.elf) -o $@
+ 	$(Q)scripts/check-gcc.sh $@ $(OUT)compile_time_request.o
+ 
+ ################ Compile time requests
+diff --git a/src/avr/main.c b/src/avr/main.c
+index 0523af41..988d2982 100644
+--- a/src/avr/main.c
++++ b/src/avr/main.c
+@@ -14,6 +14,16 @@
+ 
+ DECL_CONSTANT_STR("MCU", CONFIG_MCU);
+ 
++#ifdef DUALBOOT_BASE
++static void
++__attribute__((section(".init3"),naked,used,no_instrument_function))
++init3_set_eind (void)
++{
++  __asm volatile ("ldi r24,pm_hh8(__vectors)\n\t"
++                  "out %i0,r24" :: "n" (&RAMPZ) : "r24","memory");
++  __asm volatile ("out %i0,r24" :: "n" (&EIND) : "r24","memory");	// not needed
++}
++#endif
+ 
+ /****************************************************************
+  * Dynamic memory
+diff --git a/src/avr/pgm.h b/src/avr/pgm.h
+index 031ba079..7166bc47 100644
+--- a/src/avr/pgm.h
++++ b/src/avr/pgm.h
+@@ -7,7 +7,97 @@
+ 
+ #define NEED_PROGMEM 1
+ 
+-#define READP(VAR) ({                                                   \
++#ifdef DUALBOOT_BASE
++
++// defines below from avr/pgmspace.h LPM->hereLPM lpm->elpm adds RAMPZ to Z
++#define __hereLPM_classic__(addr)   \
++(__extension__({                \
++    uint16_t __addr16 = (uint16_t)(addr); \
++    uint8_t __result;           \
++    __asm__ __volatile__        \
++    (                           \
++        "elpm" "\n\t"            \
++        "mov %0, r0" "\n\t"     \
++        : "=r" (__result)       \
++        : "z" (__addr16)        \
++        : "r0"                  \
++    );                          \
++    __result;                   \
++}))
++
++#define __hereLPM_word_classic__(addr)          \
++(__extension__({                            \
++    uint16_t __addr16 = (uint16_t)(addr);   \
++    uint16_t __result;                      \
++    __asm__ __volatile__                    \
++    (                                       \
++        "elpm"           "\n\t"              \
++        "mov %A0, r0"   "\n\t"              \
++        "adiw r30, 1"   "\n\t"              \
++        "elpm"           "\n\t"              \
++        "mov %B0, r0"   "\n\t"              \
++        : "=r" (__result), "=z" (__addr16)  \
++        : "1" (__addr16)                    \
++        : "r0"                              \
++    );                                      \
++    __result;                               \
++}))
++
++#define __hereLPM_dword_classic__(addr)         \
++(__extension__({                            \
++    uint16_t __addr16 = (uint16_t)(addr);   \
++    uint32_t __result;                      \
++    __asm__ __volatile__                    \
++    (                                       \
++        "elpm"           "\n\t"              \
++        "mov %A0, r0"   "\n\t"              \
++        "adiw r30, 1"   "\n\t"              \
++        "elpm"           "\n\t"              \
++        "mov %B0, r0"   "\n\t"              \
++        "adiw r30, 1"   "\n\t"              \
++        "elpm"           "\n\t"              \
++        "mov %C0, r0"   "\n\t"              \
++        "adiw r30, 1"   "\n\t"              \
++        "elpm"           "\n\t"              \
++        "mov %D0, r0"   "\n\t"              \
++        : "=r" (__result), "=z" (__addr16)  \
++        : "1" (__addr16)                    \
++        : "r0"                              \
++    );                                      \
++    __result;                               \
++}))
++
++#define pgm_read_byte_here(address_short) __hereLPM_classic__((uint16_t)(address_short))
++#define pgm_read_word_here(address_short) __hereLPM_word_classic__((uint16_t)(address_short))
++#define pgm_read_dword_here(address_short) __hereLPM_dword_classic__((uint16_t)(address_short))
++
++  #define READP(VAR) ({                                                   \
++    _Pragma("GCC diagnostic push");                                     \
++    _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"");        \
++    typeof(VAR) __val =                                                 \
++        __builtin_choose_expr(sizeof(VAR) == 1,                         \
++            (typeof(VAR))pgm_read_byte_here(&(VAR)),                         \
++        __builtin_choose_expr(sizeof(VAR) == 2,                         \
++            (typeof(VAR))pgm_read_word_here(&(VAR)),                         \
++        __builtin_choose_expr(sizeof(VAR) == 4,                         \
++            (typeof(VAR))pgm_read_dword_here(&(VAR)),                        \
++        __force_link_error__unknown_type)));                            \
++    _Pragma("GCC diagnostic pop");                                      \
++    __val;                                                              \
++    })
++#if 0
++inline void *memcpy_P(void *to, const void *from, size_t v)
++{
++	char *p = (char *) to;
++	char *s = (char *) from;
++	for (uint16_t i=0; i<v; i++) {
++		p[i] = READP( s[i] );
++	}
++}
++#endif
++
++#else
++  #define READP(VAR) ({                                                   \
+     _Pragma("GCC diagnostic push");                                     \
+     _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"");        \
+     typeof(VAR) __val =                                                 \
+@@ -21,6 +111,7 @@
+     _Pragma("GCC diagnostic pop");                                      \
+     __val;                                                              \
+     })
++#endif
+ 
+ extern void __force_link_error__unknown_type(void);
+ 
+diff --git a/src/command.c b/src/command.c
+index 39c09458..ed4dc85b 100644
+--- a/src/command.c
++++ b/src/command.c
+@@ -156,7 +156,13 @@ command_encodef(uint8_t *buf, const struct command_encoder *ce, va_list args)
+             *p++ = v;
+             uint8_t *s = va_arg(args, uint8_t*);
+             if (t == PT_progmem_buffer)
++#ifdef DUALBOOT_BASE
++	        for (uint16_t i=0; i<v; i++) {
++                    p[i] = READP( s[i] );
++		}
++#else
+                 memcpy_P(p, s, v);
++#endif
+             else
+                 memcpy(p, s, v);
+             p += v;
