@@ -4,15 +4,17 @@ You can read more about this on my BLOG
 
 	http://storepeter.dk/3d-printer/avr-dualboot-bootloader
 
-Assuming your 3D-printer is running some kind of Marlin,
-on an ATmega2560, which you might not even have the source code for.
-We like to prefer the installed firmware, but also install
+The 3D-printer is running some kind of Marlin, on an ATmega2560,
+which we  might not even have the source code for.
+
+We like to keep the installed firmware, but would also like to install
 klipper as secondary on the MCU.
 
-A physical switch is added to the 3D-printer
+This can be done by installing avr-dualboot as bootloader
+and install a physical switch on to the 3D-printer
 to control if it will boot into Marlin or Klipper.
 
-This is what we wil do:
+Here is what we need to do:
 
 - get the sources from Github for avr-dualboot and klipper
 - backup current firmware from ATmega2560
@@ -31,15 +33,15 @@ this command
 ### Backup current firmware from ATmega2560
 
 Connect your favorite ISP tool,
-I use USBasp from China which were running very old firmware
-and needed a software update.  (see avr-dualboot/README.USBasp
+I use cheap USBasp-clones from China which were running very old firmware.
+see avr-dualboot/README.USBasp if this applies to you too.
 
 First we should backup the Firmware currently on the MCU
 
 	$ make backup
 
 A full backup of the current firmware including bootloader
-but not fuse settings is created, check it out for me it was:
+but not fuse settings is created, check it out, for me it was:
 
 	$ ls avr-dualboot/Preserved_Firmware/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
 ```
