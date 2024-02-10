@@ -7,10 +7,12 @@ You can read more about this on my BLOG
 Assuming your 3D-printer is running some kind of Marlin,
 on an ATmega2560, which you might not even have the source code for.
 We like to prefer the installed firmware, but also install
-klipper as secondary on the MCU.  We will add a physical switch
-to control if the 3D-Printer will runs MArlin or Klipper when RESET/powered-ON
+klipper as secondary on the MCU.
 
-This is what we wil do here:
+A physical switch is added to the 3D-printer
+to control if it will boot into Marlin or Klipper.
+
+This is what we wil do:
 
 - get the sources from Github for avr-dualboot and klipper
 - backup current firmware from ATmega2560
@@ -29,25 +31,24 @@ this command
 ### Backup current firmware from ATmega2560
 
 Connect your favorite ISP tool,
-I use USBasp see avr-dualboot/README.USBasp from China
-which were running very old firmware and needed a software update.
+I use USBasp from China which were running very old firmware
+and needed a software update.  (see avr-dualboot/README.USBasp
 
-First you should backup the Firmware currently on the MCU
+First we should backup the Firmware currently on the MCU
 
 	$ make backup
 
 A full backup of the current firmware including bootloader
-but not fuse settings, check it out for me it was:
+but not fuse settings is created, check it out for me it was:
 
-	$ ls -l avr-dualboot/Preserved_Firmware/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
+	$ ls avr-dualboot/Preserved_Firmware/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
 ```
-total 580
--rw-rw-r-- 1 peter peter   4096 Jan 29 16:32 eeprom.bin
--rw-rw-r-- 1 peter peter   9740 Jan 29 16:32 eeprom.hex
--rw-rw-r-- 1 peter peter 261406 Jan 29 16:32 flash.bin
--rw-rw-r-- 1 peter peter 620900 Jan 29 16:32 flash.hex
--rw-rw-r-- 1 peter peter 108572 Jan 29 16:32 orig-app.bin
--rw-rw-r-- 1 peter peter 305392 Jan 29 16:32 orig-app.hex
+   4096 Jan 29 16:32 eeprom.bin
+   9740 Jan 29 16:32 eeprom.hex
+ 261406 Jan 29 16:32 flash.bin
+ 620900 Jan 29 16:32 flash.hex
+ 108572 Jan 29 16:32 orig-app.bin
+ 305392 Jan 29 16:32 orig-app.hex
 ```
 
 ### Compile and install dualboot bootloader
@@ -83,7 +84,7 @@ Usage: dualtool.sh [option] [primary_firmware.elf] [secondary_firmware.elf]
 check for trampolines,handle vector_table, suggest DUAL_BASE
 ```
 
-Without options it will show you a map of the flash on the MCU
+Without options it will show a map of the flash on the MCU
 
 	$dualtool.sh 
 
@@ -97,7 +98,7 @@ Without options it will show you a map of the flash on the MCU
 
 ```
 
-you can check new bootloader by downloading primary.elf and secondary.elf
+Check new bootloader by downloading primary.elf and secondary.elf
 
 	$ make flash
 
@@ -121,7 +122,7 @@ To restore the original Firmware, with the newly install DualBoot bootloader
 
 	$ make restore
 
-Now you should have system that works as before, with the difference that it now has a bootloader
+Now we should have system that works as before, with the difference that it now has a bootloader
 
 ### Configure, and compile Klipper
 
