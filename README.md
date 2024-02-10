@@ -1,39 +1,43 @@
-# DualFirmware_Marlin_Klipper
+# DualFirmware Marlin Klipper
 
 You can read more about this on my BLOG
 
 	http://storepeter.dk/3d-printer/avr-dualboot-bootloader
 
-Assuming youa 3D-printer is running some kind of Marlin,
-on an ATmega2560, which you does not even have the source for,
+Assuming your 3D-printer is running some kind of Marlin,
+on an ATmega2560, which you might not even have the source code for.
+We like to prefer the installed firmware, but also install
+klipper as secondary on the MCU.  We will add a physical switch
+to control if the 3D-Printer will runs MArlin or Klipper when RESET/powered-ON
+
 This is what we wil do here:
 
-# - get the sources from Github for avr-dualboot and klipper
-# - backup current firmware from ATmega2560
-# - compile and install dualboot bootloader
-# - restore the backup firmware as Primary Firmware
-# - configure, and compile Klipper
-# - install the klipper firmware as Secondary Firmware
+- get the sources from Github for avr-dualboot and klipper
+- backup current firmware from ATmega2560
+- compile and install dualboot bootloader
+- restore the backup firmware as Primary Firmware
+- configure, and compile Klipper
+- install the klipper firmware as Secondary Firmware
 
-# - get the sources from Github for avr-dualboot and klipper
+### Get the sources from Github for avr-dualboot and klipper
 
 You can download and patch the sources with the necessary changes using
 this command
 
 	$ make src
 
-# - backup current firmware from ATmega2560
+### Backup current firmware from ATmega2560
 
-You need to have you ISP connected to your mainboard, if you are using USBasp then please
+Connect your favorite ISP tool,
+I use USBasp see avr-dualboot/README.USBasp from China
+which were running very old firmware and needed a software update.
 
 First you should backup the Firmware currently on the MCU
 
-Connect your favorite ISP tool, I use USBasp (see avr-dualboot/README.USBasp)
-
 	$ make backup
 
-has created a full backup of the current firmware including bootloader
-but not fuse settings in f.ex:
+A full backup of the current firmware including bootloader
+but not fuse settings, check it out for me it was:
 
 	$ ls -l avr-dualboot/Preserved_Firmware/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
 ```
@@ -46,7 +50,7 @@ total 580
 -rw-rw-r-- 1 peter peter 305392 Jan 29 16:32 orig-app.hex
 ```
 
-# - compile and install dualboot bootloader
+### Compile and install dualboot bootloader
 
 Defaults is for a bootloader on an ATmega2560 16 Mhz,
 see Makefile for further details.
@@ -111,7 +115,7 @@ You can check what is on MCU using
 # Keep secondary firmware, not erasing
 ```
 
-# - restore the backup firmware as Primary Firmware
+### Restore the backup firmware as Primary Firmware
 
 To restore the original Firmware, with the newly install DualBoot bootloader
 
@@ -119,18 +123,18 @@ To restore the original Firmware, with the newly install DualBoot bootloader
 
 Now you should have system that works as before, with the difference that it now has a bootloader
 
-# - configure, and compile Klipper
+### Configure, and compile Klipper
 
 	$ make klipper.config
 	$ nake klipper.compile
 
-# - install the klipper firmware as Secondary Firmware
+### Install the klipper firmware as Secondary Firmware
 
 	$ make klipper.flash
 
-# we are DONE
+### DONE
 
-You can check what is on MCU using
+You can check what is on the MCU using
 
 	$ ./dualtool.sh
 
