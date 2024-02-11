@@ -1,14 +1,17 @@
 # DualFirmware Marlin Klipper
 
-You can read more about this on my BLOG
+You can read more about this on my BLOG:
 
-	http://storepeter.dk/3d-printer/avr-dualboot-bootloader
+- http://storepeter.dk/3d-printer/dual-applications-on-atmega2560-marlin-and-klipper-fail-well-almost
+- http://storepeter.dk/3d-printer/avr-dualboot-bootloader
+- http://storepeter.dk/3d-printer/install-klipper-on-your-old-3d-printer-and-still-keep-marlin
+	
 
-The 3D-printer is running some kind of Marlin, on an ATmega2560,
+The 3D-printer is currently running some kind of Marlin, on an ATmega2560,
 which we  might not even have the source code for.
 
 We like to keep the installed firmware, but would also like to install
-klipper as secondary on the MCU.
+klipper as secondary firmware on the MCU.
 
 This can be done by installing avr-dualboot as bootloader
 and install a physical switch on to the 3D-printer
@@ -16,12 +19,13 @@ to control if it will boot into Marlin or Klipper.
 
 Here is what we need to do:
 
-- get the sources from Github for avr-dualboot and klipper
-- backup current firmware from ATmega2560
-- compile and install dualboot bootloader
-- restore the backup firmware as Primary Firmware
-- configure, and compile Klipper
-- install the klipper firmware as Secondary Firmware
+- Add a physical switch, default is using KILL-PIN
+- Get the sources from Github for avr-dualboot and klipper
+- Backup current firmware from ATmega2560
+- Compile and install dualboot bootloader
+- Restore the backup firmware as Primary Firmware
+- Configure, and compile Klipper
+- Install the klipper firmware as Secondary Firmware
 
 ### Get the sources from Github for avr-dualboot and klipper
 
