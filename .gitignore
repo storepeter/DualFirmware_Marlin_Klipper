@@ -1,0 +1,13 @@
+*.elf
+*.hex
+*.bin
+*.lst
+*.list
+*.tmp
+fil
+marlin
+klipper
+avr-dualboot
+build.*
+MarlinConfigurations
+libdeps

@@ -60,16 +60,16 @@ klipper.compile klipper/out/klipper.elf: klipper.src
 	$(MAKE) -C klipper $(VERBOSE) clean
 	$(MAKE) -C klipper $(VERBOSE) $(RELOCATE)
 
-klipper.check: klipper/klipper.elf
+klipper.check: klipper/out/klipper.elf
 	$(DUALTOOL) -1 -e $^
 
-klipper.flash: backup build.klipper/klipper.elf
+klipper.flash: backup klipper/out/klipper.elf
 	$(DUALTOOL) -1 -e -w $^
 
-flash: backup klipper/klipper.elf
-	avr-size       $^
+flash: backup klipper/out/klipper.elf
+	avr-size       klipper/out/klipper.elf
 	$(MAKE) restore
-	$(DUALTOOL) -w $^
+	$(DUALTOOL) -w klipper/out/klipper.elf
 
 klipper.test:
 	$(KLIPPER_PYTHON) klipper/klippy/console.py -v $(TTY)
@@ -79,6 +79,7 @@ klipper.test:
 
 %.patch:
 	mkdir -p Patches
+	git -C $(basename $@) remote get-url origin > Patches/$(@:patch=url)
 	git -C $(basename $@) rev-parse --short HEAD > Patches/$(@:patch=gitHEAD)
 	git -C $(basename $@) diff --diff-filter=M > Patches/$@
 
@@ -95,8 +96,5 @@ clean: avr-dualboot.clean  klipper.clean
 dist-clean:
 	rm -rf  avr-dualboot klipper
 
-dualboot.flash backup restore:
-	$(MAKE) -C avr-dualboot $@
-
-cu:
-	picocom -l $(TTY) -b $(BAUD) --imap=lfcrlf
+dualboot.flash backup restore cu:
+	$(MAKE) -C avr-dualboot TTY=$(TTY) CU_BAUD=$(BAUD) $@
