@@ -33,7 +33,9 @@ compile: avr-dualboot/dualboot.elf klipper/out/klipper.elf
 # until I under stand this, let bash handle it
 	echo "$$@=$@: | $$<=$<"
 	if [ ! -d  $(basename $@) ]; then \
-		git clone $($(basename $@).git); \
+		if [ -f Patches/$(basename $@).url ]; then \
+			git -C $(basename $@) clone $$(cat Patches/$(basename $@).url); \
+		fi; \
 		if [ -f Patches/$(basename $@).gitHEAD ]; then \
 			git -C $(basename $@) checkout $$(cat Patches/$(basename $@).gitHEAD) < Patches/$(basename $@).patch; \
 		fi; \
